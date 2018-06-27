@@ -365,6 +365,7 @@ void gui::UpdateCanvas()
         g->SetPoint(counter, p.at(0), p.at(1), p.at(2));
         counter++;
       }
+      
       g->SetMarkerSize(0.5);
       g->SetMarkerColor(colors.at(c));
       g->SetMarkerStyle(8);
@@ -375,6 +376,7 @@ void gui::UpdateCanvas()
   } else {
     // We're not plotting clusters
     unsigned points = currentData.data.size();
+
     TPolyMarker3D *g = new TPolyMarker3D(points);
     unsigned counter = 0;
     for (const auto &p : currentData.data) {
