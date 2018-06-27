@@ -88,7 +88,8 @@ void FileReader::ReadFile()
 
         // Store the data
         std::vector<double> points;
-        points.push_back(std::stod(words.at(0))); points.push_back(std::stod(words.at(1))); points.push_back(std::stod(words.at(2)));
+        points.push_back(std::stod(words.at(0))); points.push_back(std::stod(words.at(1))); 
+        points.push_back(std::stod(words.at(2))); points.push_back(std::stod(words.at(3)));
         if (isClustering) this_cluster.push_back(points);
         tpc_event.data.push_back(points);
       } // while getline

@@ -61,6 +61,7 @@ public:
   void Init();
   void GetDetectorCanvas();
   void UpdateCanvas();
+  std::pair<double, double> GetMinMaxAmp(std::vector< std::vector<double> > v);
 };
 #endif
 
@@ -340,6 +341,21 @@ void gui::SetCurrentData()
   currentData = events.at(eventItr - 1);
 }
 
+std::pair<double, double> gui::GetMinMaxAmp(std::vector< std::vector<double> > v)
+{
+  double min = 1000;
+  double max = 0;
+
+  for (const auto &p : v) {
+    if (p.at(3) > max) max = p.at(3);
+    if (p.at(3) < min) min = p.at(3);
+  }
+
+  std::pair<double, double> p;
+  p = std::make_pair(min, max);
+  return p;
+}
+
 void gui::UpdateCanvas()
 {
 
@@ -359,19 +375,21 @@ void gui::UpdateCanvas()
     for (unsigned c = 0; c != n_clusters; c++) {
       // Make a new polymarker3D
       unsigned points = currentData.cluster_data.at(c).size();
-      TPolyMarker3D *g = new TPolyMarker3D(points);
+      std::pair<double, double> min_max = GetMinMaxAmp(currentData.cluster_data.at(c));      
+
       unsigned counter = 0;
       for (const auto &p : currentData.cluster_data.at(c)) {
-        g->SetPoint(counter, p.at(0), p.at(1), p.at(2));
+        TPolyMarker3D *g = new TPolyMarker3D(1);
+        g->SetPoint(0, p.at(0), p.at(1), p.at(2));
         counter++;
-      }
       
-      g->SetMarkerSize(0.5);
-      g->SetMarkerColor(colors.at(c));
-      g->SetMarkerStyle(8);
-      if (c == 0) {
-        g->Draw();
-      } else g->Draw("p same");
+        g->SetMarkerSize((p.at(3) - min_max.first)/100 + .2);
+        g->SetMarkerColor(colors.at(c));
+        g->SetMarkerStyle(24);
+        if (c == 0 && counter == 0) {
+          g->Draw();
+        } else g->Draw("p same");
+      }
     }
   } else {
     // We're not plotting clusters
