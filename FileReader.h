@@ -62,6 +62,8 @@ void FileReader::ReadFile()
 
       // Start reading the data for this event
       std::vector<std::vector<double>> this_cluster;
+      std::vector<double>              this_track_start;
+      std::vector<double>              this_track_end;
       while (std::getline(f,line)) {
         iss = std::istringstream(line);
         words = std::vector<std::string>(( std::istream_iterator<std::string>(iss) ), std::istream_iterator<std::string>());
@@ -70,6 +72,8 @@ void FileReader::ReadFile()
         if (words.at(0) == "Run") {
           // Finish up last event
           tpc_event.cluster_data.push_back(this_cluster);
+	  tpc_event.track_start.push_back(this_track_start);
+	  tpc_event.track_end.push_back(this_track_end);
           this_cluster.clear();
           found_run = true;
           break;
@@ -81,8 +85,18 @@ void FileReader::ReadFile()
           tpc_event.clustering = true;
           if (this_cluster.size() > 0) {
             tpc_event.cluster_data.push_back(this_cluster);
+	    tpc_event.track_start.push_back(this_track_start);
+            tpc_event.track_end.push_back(this_track_end);
             this_cluster.clear();
+	    this_track_start.clear();
+	    this_track_end.clear();
           }
+	  // Get the track info
+	  if (words.size() > 2) {
+            tpc_event.tracking = true;
+	    this_track_start.push_back(std::stod(words.at(2))); this_track_start.push_back(std::stod(words.at(3))); this_track_start.push_back(std::stod(words.at(4)));
+	    this_track_end.push_back(std::stod(words.at(5)));   this_track_end.push_back(std::stod(words.at(6)));   this_track_end.push_back(std::stod(words.at(7)));
+	  }
           continue;
         }
 
@@ -97,7 +111,11 @@ void FileReader::ReadFile()
       // Check for end of file
       if (f.eof()) {
         tpc_event.cluster_data.push_back(this_cluster);
+	tpc_event.track_start.push_back(this_track_start);
+        tpc_event.track_end.push_back(this_track_end);
         this_cluster.clear();
+	this_track_start.clear();
+        this_track_end.clear();
       }
 
       // Make sure there are space points in this event
@@ -128,9 +146,15 @@ void FileReader::PrintClusterData()
               << "Event "  << e.event  << "\n";
     unsigned c = 0;
     for (const auto &cl : e.cluster_data) {
-      std::cout << "Cluster " << c << "\n";
-      for (const auto &p : cl) {
-        std::cout << p.at(0) << " " << p.at(1) << " " << p.at(2) << std::endl;
+      if (e.tracking) {
+	std::cout << "Cluster " << c
+                  << "  Track (" << e.track_start.at(c).at(0) << ", " << e.track_start.at(c).at(1) << ", " << e.track_start.at(c).at(2) << ")"
+	          << "  --->  (" << e.track_end.at(c).at(0)   << ", " << e.track_end.at(c).at(1)   << ", " << e.track_end.at(c).at(2)   << ")\n";
+      } else {
+        std::cout << "Cluster " << c << std::endl;
+        for (const auto &p : cl) {
+          std::cout << p.at(0) << " " << p.at(1) << " " << p.at(2) << std::endl;
+        }
       }
       c++;
     }

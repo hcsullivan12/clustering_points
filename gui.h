@@ -378,6 +378,7 @@ void gui::UpdateCanvas()
       std::pair<double, double> min_max = GetMinMaxAmp(currentData.cluster_data.at(c));      
 
       unsigned counter = 0;
+      // Draw the points
       for (const auto &p : currentData.cluster_data.at(c)) {
         TPolyMarker3D *g = new TPolyMarker3D(1);
         g->SetPoint(0, p.at(0), p.at(1), p.at(2));
@@ -389,6 +390,19 @@ void gui::UpdateCanvas()
         if (c == 0 && counter == 0) {
           g->Draw();
         } else g->Draw("p same");
+      }
+      if (currentData.tracking) {
+        // Draw the tracks
+        std::vector<double> this_start_point, this_end_point;
+        this_start_point = currentData.track_start.at(c);
+        this_end_point   = currentData.track_end.at(c);
+
+        TPolyLine3D *l = new TPolyLine3D(2);
+        l->SetPoint(0, this_start_point.at(0), this_start_point.at(1), this_start_point.at(2));
+        l->SetPoint(1, this_end_point.at(0),   this_end_point.at(1),   this_end_point.at(2));
+        l->SetLineColor(colors.at(c));
+        l->SetLineWidth(3);
+        l->Draw("same");
       }
     }
   } else {
