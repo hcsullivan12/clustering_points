@@ -16,20 +16,28 @@
 class gui {
   RQ_OBJECT("gui")
 private:
-  TGMainFrame           *fMain;
+  TGMainFrame              *fMain;
 
-  TRootEmbeddedCanvas  *canvas;
+  TRootEmbeddedCanvas *raw_canvas;
+  TRootEmbeddedCanvas *clu_canvas;
 
-  TGTextButton         *fStart;
-  TGTextButton      *set_param;
+  TGTextButton            *fStart;
+  TGTextButton         *set_param;
 
-  TGLabel                 *run;
-  TGLabel              *subrun;
-  TGLabel               *event;
+  TGVButtonGroup  *leftButtonGroup;
+  TGVButtonGroup *rightButtonGroup;
+  TGCheckButton       *leftRawHits;
+  TGCheckButton      *leftPreMerge;
+  TGCheckButton     *leftPostMerge;
+  TGCheckButton      *rightRawHits;
+  TGCheckButton     *rightPreMerge;
+  TGCheckButton    *rightPostMerge;
 
-  TGTextEntry           *entry;
+  TGLabel                    *run;
+  TGLabel                 *subrun;
+  TGLabel                  *event;
 
-  unsigned nEvents = 10;
+  TGTextEntry              *entry;
 
   TGTextEntry       *set_event;
 
@@ -54,13 +62,17 @@ public:
   void SetCurrentData();
   void ChangeStartLabel();
   void GetLeftFrame(TGVerticalFrame *f);
-  void GetMiddleFrame(TGVerticalFrame *f);
+  void GetMiddleFrame1(TGVerticalFrame *f);
+  void GetMiddleFrame2(TGVerticalFrame *f);
   void SetEvents(std::vector<TPCEvent> e) {
     events = e;
   };
+  void SetRightPlot(std::string);
+  void SetLeftPlot(std::string);
   void Init();
-  void GetDetectorCanvas();
-  void UpdateCanvas();
+  void GetDetectorCanvas(bool raw);
+  void UpdateRawCanvas();
+  void UpdateClusteringCanvas();
   std::pair<double, double> GetMinMaxAmp(std::vector< std::vector<double> > v);
 };
 #endif
@@ -76,12 +88,16 @@ gui::gui(const TGWindow *p,UInt_t w,UInt_t h)
   // Create vertical frames
   TGVerticalFrame *vframe1 = new TGVerticalFrame(hframe1,400,1000);
   TGVerticalFrame *vframe2 = new TGVerticalFrame(hframe1,800,1000);
+  TGVerticalFrame *vframe3 = new TGVerticalFrame(hframe1,800,1000);
 
   // Get the frames with widgets
   GetLeftFrame(vframe1);
-  GetMiddleFrame(vframe2);
+  GetMiddleFrame1(vframe2);
+  GetMiddleFrame2(vframe3);
+
   hframe1->AddFrame(vframe1, new TGLayoutHints(kLHintsLeft | kLHintsExpandY,5,5,30,100));
   hframe1->AddFrame(vframe2, new TGLayoutHints(kLHintsLeft | kLHintsExpandX | kLHintsCenterY | kLHintsExpandY, 5,5,20,20) );
+  hframe1->AddFrame(vframe3, new TGLayoutHints(kLHintsLeft | kLHintsExpandX | kLHintsCenterY | kLHintsExpandY, 5,5,20,20) );
 
   // Add horizontal to main frame
   fMain->AddFrame(hframe1, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY,5,5,5,5));
@@ -110,11 +126,24 @@ void gui::Init()
 {
   // Would like to draw the 3D plot here
   // and the detector
-  //TCanvas *c = new TCanvas();
-  GetDetectorCanvas();
+  //GetDetectorCanvas(true);
+  //GetDetectorCanvas(false);
+  UpdateRawCanvas();
+  UpdateClusteringCanvas();
+  /*// Fix the view
+  TCanvas *raw = raw_canvas->GetCanvas();
+  raw->GetView()->SetPerspective();
+  raw->GetView()->ZoomOut();
+  raw->GetView()->ZoomOut();
+  raw->GetView()->ZoomOut();
+  TCanvas *clu = clu_canvas->GetCanvas();
+  clu->GetView()->SetPerspective();
+  clu->GetView()->ZoomOut();
+  clu->GetView()->ZoomOut();
+  clu->GetView()->ZoomOut();*/
 }
 
-void gui::GetDetectorCanvas()
+void gui::GetDetectorCanvas(bool is_raw)
 {
   //Draw detector
   TPolyLine3D *top1 = new TPolyLine3D(2);
@@ -226,17 +255,35 @@ void gui::GetDetectorCanvas()
   x1->Draw("same");
   z1->Draw("same");
 
-  TCanvas *f = canvas->GetCanvas();
-  f->cd();
-  f->Update();
-  f->GetView()->AdjustScales();
+  if (is_raw) 
+  {	  
+    TCanvas *raw = raw_canvas->GetCanvas();
+    raw->cd();
+    raw->Update();
+    //raw->GetView()->SetPerspective();
+    //raw->GetView()->ZoomIn();
+    return;
+  }
+
+  TCanvas *clu = clu_canvas->GetCanvas();
+  clu->cd();
+  clu->Update();
+  //clu->GetView()->AdjustScales();
 }
 
-void gui::GetMiddleFrame(TGVerticalFrame *f)
+void gui::GetMiddleFrame1(TGVerticalFrame *f)
 {
   // 3rd vertical frame
-  canvas = new TRootEmbeddedCanvas("canvas",f,200,200);
-  f->AddFrame(canvas, new TGLayoutHints(kLHintsCenterX | kLHintsExpandX | kLHintsCenterY | kLHintsExpandY,5,5,5,5));
+  raw_canvas = new TRootEmbeddedCanvas("raw_canvas",f,200,200);
+  f->AddFrame(raw_canvas, new TGLayoutHints(kLHintsCenterX | kLHintsExpandX | kLHintsCenterY | kLHintsExpandY,5,5,5,5));
+  //clu_canvas = new TRootEmbeddedCanvas("clu_canvas",f,200,200);
+  //f->AddFrame(clu_canvas, new TGLayoutHints(kLHintsCenterX | kLHintsExpandX | kLHintsCenterY | kLHintsExpandY,5,5,5,5));
+}
+
+void gui::GetMiddleFrame2(TGVerticalFrame *f)
+{
+  clu_canvas = new TRootEmbeddedCanvas("clu_canvas",f,200,200);
+  f->AddFrame(clu_canvas, new TGLayoutHints(kLHintsCenterX | kLHintsExpandX | kLHintsCenterY | kLHintsExpandY,5,5,5,5));
 }
 
 void gui::GetLeftFrame(TGVerticalFrame *f)
@@ -271,13 +318,44 @@ void gui::GetLeftFrame(TGVerticalFrame *f)
   previous->Connect("Clicked()","gui",this,"GoToPreviousEvent()");
   f->AddFrame(previous, new TGLayoutHints(kLHintsExpandX,5,5,5,5) );
   // Start button
-  fStart = new TGTextButton(f,"&Start");
-  fStart->Connect("Clicked()","gui",this,"ChangeStartLabel()");
-  f->AddFrame(fStart, new TGLayoutHints(kLHintsExpandX | kLHintsCenterY,5,5,5,5));
+  //fStart = new TGTextButton(f,"&Start");
+  //fStart->Connect("Clicked()","gui",this,"ChangeStartLabel()");
+  //f->AddFrame(fStart, new TGLayoutHints(kLHintsExpandX | kLHintsCenterY,5,5,5,5));
+  // Now add the plotting information
+  std::string typeRaw = "raw"; std::string typePre = "pre"; std::string typePost = "post";
+  leftButtonGroup  = new TGVButtonGroup(f, "Left Plot");
+  leftRawHits      = new TGCheckButton(leftButtonGroup, new TGHotString("Raw hits"));
+  leftRawHits->Connect("Clicked()","gui",this,"SetLeftPlot(=\"typeRaw\")");
+  leftPreMerge     = new TGCheckButton(leftButtonGroup, new TGHotString("Pre cluster merging"));
+  leftPreMerge->Connect("Clicked()","gui",this,"SetLeftPlot(=\"typePre\")");
+  leftPostMerge    = new TGCheckButton(leftButtonGroup, new TGHotString("Post cluster merging"));
+  leftPostMerge->Connect("Clicked()","gui",this,"SetLeftPlot(=\"typePost\")");
+  rightButtonGroup = new TGVButtonGroup(f, "Right Plot");
+  rightRawHits     = new TGCheckButton(rightButtonGroup, new TGHotString("Raw hits"));
+  rightRawHits->Connect("Clicked()","gui",this,"SetRightPlot(=\"typeRaw\")");
+  rightPreMerge    = new TGCheckButton(rightButtonGroup, new TGHotString("Pre cluster merging"));
+  rightPreMerge->Connect("Clicked()","gui",this,"SetRightPlot(=\"typePre\")");
+  rightPostMerge   = new TGCheckButton(rightButtonGroup, new TGHotString("Post cluster merging"));
+  rightPostMerge->Connect("Clicked()","gui",this,"SetRightPlot(=\"typePost\")");
+
+  //leftButtonGroup->Show();
+  f->AddFrame(leftButtonGroup, new TGLayoutHints(kLHintsExpandX,5,5,5,5));
+  f->AddFrame(rightButtonGroup, new TGLayoutHints(kLHintsExpandX,5,5,5,5));
+
   // Quit button
   TGTextButton *quit = new TGTextButton(f,"&Quit", "gApplication->Terminate(0)");
   f->AddFrame(quit, new TGLayoutHints(kLHintsExpandX | kLHintsBottom,5,5,5,5) );
   f->Resize(200,1000);
+}
+
+void gui::SetLeftPlot(std::string type)
+{
+
+}
+
+void gui::SetRightPlot(std::string type)
+{
+
 }
 
 void gui::ChangeStartLabel()
@@ -333,7 +411,8 @@ void gui::Update()
   event->SetTextJustify(kTextLeft);
 
   // Add the points for this event
-  UpdateCanvas();
+  UpdateRawCanvas();
+  UpdateClusteringCanvas();
 }
 
 void gui::SetCurrentData()
@@ -356,37 +435,45 @@ std::pair<double, double> gui::GetMinMaxAmp(std::vector< std::vector<double> > v
   return p;
 }
 
-void gui::UpdateCanvas()
+void gui::UpdateClusteringCanvas()
 {
-
   // First clear the canvas 
-  TCanvas *f = canvas->GetCanvas();
-  f->Clear();
-  GetDetectorCanvas();
+  TCanvas *clu = clu_canvas->GetCanvas();
+  clu->Clear();
+  GetDetectorCanvas(false);
+  // Fix the view
+  clu->GetView()->SetPerspective();
+  clu->GetView()->ZoomIn();
+  clu->GetView()->ZoomIn();
+  clu->GetView()->ZoomIn();
 
   // Define color vector 
-  std::vector<unsigned> colors = {1,2,3,4,5,6,8,9,11,12,28,29,38,39,44,46,1,2,3,4};
-
+  std::vector<unsigned> colors = {1,2,3,4,5,6,8,9,11,12,28,29,38,39,44,46};
+  unsigned colorItr = 0;
   if (currentData.clustering) {
     // We need to make seperate graphs
     // for each cluster
     unsigned n_clusters = currentData.cluster_data.size();
   
     for (unsigned c = 0; c != n_clusters; c++) {
+      if (colorItr >= colors.size()) colorItr = 0;
       // Make a new polymarker3D
       unsigned points = currentData.cluster_data.at(c).size();
       std::pair<double, double> min_max = GetMinMaxAmp(currentData.cluster_data.at(c));      
-
+      //std::cout << "min: " << min_max.first << "  max: " << min_max.second << std::endl;
       unsigned counter = 0;
       // Draw the points
       for (const auto &p : currentData.cluster_data.at(c)) {
         TPolyMarker3D *g = new TPolyMarker3D(1);
         g->SetPoint(0, p.at(0), p.at(1), p.at(2));
         counter++;
-      
-        g->SetMarkerSize((p.at(3) - min_max.first)/100 + .2);
-        g->SetMarkerColor(colors.at(c));
-        g->SetMarkerStyle(24);
+        // Make ambiguious hits large
+	unsigned range = min_max.second - min_max.first; 
+        if (p.at(3) < 2) g->SetMarkerSize(0.5);
+	if (p.at(3) >= 2)  g->SetMarkerSize(p.at(3) - 0.5);  //(p.at(3) - min_max.first)/min_max.second + .1);
+        g->SetMarkerColor(colors.at(colorItr));
+	if (p.at(3) < 2) g->SetMarkerStyle(8);
+	if(p.at(3) >= 2) g->SetMarkerStyle(24);
         if (c == 0 && counter == 0) {
           g->Draw();
         } else g->Draw("p same");
@@ -400,10 +487,11 @@ void gui::UpdateCanvas()
         TPolyLine3D *l = new TPolyLine3D(2);
         l->SetPoint(0, this_start_point.at(0), this_start_point.at(1), this_start_point.at(2));
         l->SetPoint(1, this_end_point.at(0),   this_end_point.at(1),   this_end_point.at(2));
-        l->SetLineColor(colors.at(c));
+        l->SetLineColor(colors.at(colorItr));
         l->SetLineWidth(3);
         l->Draw("same");
       }
+      colorItr++;
     }
   } else {
     // We're not plotting clusters
@@ -417,12 +505,58 @@ void gui::UpdateCanvas()
     }
     g->SetMarkerSize(0.5);
     g->SetMarkerColor(4);
-    g->SetMarkerStyle(8);
+    g->SetMarkerStyle(24);
     g->Draw("p same");
   }
 
-  f->cd();
-  f->Update();
+  clu->cd();
+  clu->Update();
+}
+
+void gui::UpdateRawCanvas()
+{
+  // First clear the canvas 
+  TCanvas *raw = raw_canvas->GetCanvas();
+  raw->Clear();
+  GetDetectorCanvas(true);
+  // Fix the view
+  raw->GetView()->SetPerspective();
+  raw->GetView()->ZoomIn();
+  raw->GetView()->ZoomIn();
+  raw->GetView()->ZoomIn();
+  //raw->GetView()->AdjustScales();
+
+  // We're not plotting clusters
+  // Draw the points
+  std::pair<double, double> min_max = GetMinMaxAmp(currentData.data);
+  unsigned counter = 0;
+  for (const auto &p : currentData.data) {
+    TPolyMarker3D *g = new TPolyMarker3D(1);
+    g->SetPoint(0, p.at(0), p.at(1), p.at(2));
+    counter++;
+
+    g->SetMarkerSize((p.at(3) - min_max.first)/100 + .2);
+    g->SetMarkerColor(1);
+    g->SetMarkerStyle(24);
+    if (counter == 0) {
+      g->Draw();
+    } else g->Draw("p same");
+  }
+  
+  /*unsigned points = currentData.data.size();
+  TPolyMarker3D *g = new TPolyMarker3D(points);
+  unsigned counter = 0;
+  for (const auto &p : currentData.data) {
+    g->SetPoint(counter, p.at(0), p.at(1), p.at(2));
+    counter++;
+  }
+  g->SetMarkerSize(0.5);
+  g->SetMarkerColor(4);
+  g->SetMarkerStyle(8);
+  g->Draw("p same");*/
+
+  raw->cd();
+  raw->Update();
 }
 
 void gui::GoToEvent()
@@ -449,4 +583,3 @@ void gui::GoToEvent()
     Update();
   }
 }
-

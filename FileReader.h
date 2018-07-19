@@ -48,17 +48,17 @@ void FileReader::ReadFile()
       // Create a new tpc event
       TPCEvent tpc_event;
       // Run
-      tpc_event.run = std::stoi(words.at(1));
+      tpc_event.run = std::stof(words.at(1));
       // Subrun
       std::getline(f,line);
       iss = std::istringstream(line);
       words = std::vector<std::string>(( std::istream_iterator<std::string>(iss) ), std::istream_iterator<std::string>());
-      tpc_event.subrun = std::stoi(words.at(1));
+      tpc_event.subrun = std::stof(words.at(1));
       // Event
       std::getline(f,line);
       iss = std::istringstream(line);
       words = std::vector<std::string>(( std::istream_iterator<std::string>(iss) ), std::istream_iterator<std::string>());
-      tpc_event.event = std::stoi(words.at(1));
+      tpc_event.event = std::stof(words.at(1));
 
       // Start reading the data for this event
       std::vector<std::vector<double>> this_cluster;

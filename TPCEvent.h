@@ -4,9 +4,9 @@
 struct TPCEvent {
   
   public:
-    unsigned run;
-    unsigned subrun;
-    unsigned event;
+    float run;
+    float subrun;
+    float event;
     bool clustering = false;
     bool tracking = false;
     std::vector< std::vector<double> > data;
